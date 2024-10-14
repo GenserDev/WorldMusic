@@ -13,6 +13,9 @@
         android:theme="@style/Theme.MusicWorld"
         tools:targetApi="31">
         <activity
+            android:name=".PlaylistActivity"
+            android:exported="false" />
+        <activity
             android:name=".MyLibraryActivity"
             android:exported="false" />
         <activity
