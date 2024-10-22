@@ -8,9 +8,6 @@
       <SelectionState runConfigName="PrimeraPantalla">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="MainScreenPreview">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
       <SelectionState runConfigName="SearchScreen">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>

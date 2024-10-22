@@ -104,7 +104,7 @@ fun LibraryScreen() {
         }
 
         // Menú inferior con iconos
-        BottomNavigationBar()
+        BottomNavigationBar1()
     }
 }
 
@@ -127,7 +127,7 @@ fun PlaylistButton(playlistName: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun BottomNavigationBar() {
+fun BottomNavigationBar1() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
