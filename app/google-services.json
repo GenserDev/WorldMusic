@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "172856943260",
+    "project_id": "worldmusic-82323",
+    "storage_bucket": "worldmusic-82323.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:172856943260:android:77ffbadad52f1b02d94359",
+        "android_client_info": {
+          "package_name": "com.example.musicworld"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWQk_8M51xb6UWDzvJbos9ftESbCyVgmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
