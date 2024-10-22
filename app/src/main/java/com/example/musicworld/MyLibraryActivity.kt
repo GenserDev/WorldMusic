@@ -4,12 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -37,7 +39,7 @@ class MyLibraryActivity : ComponentActivity() {
 
 @Composable
 fun LibraryScreen() {
-    // Lista de playlists con nombres
+    // Lista de playlists con nombres personalizados
     val playlists = remember { mutableStateListOf("Favoritos", "My Playlist", "My Playlist", "Top Hits") }
 
     Column(
@@ -45,7 +47,7 @@ fun LibraryScreen() {
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFF6A0DAD), Color.Black)
+                    colors = listOf(Color(0xFF6A0DAD), Color.Black) // Morado a negro
                 )
             )
             .padding(16.dp)
@@ -88,40 +90,73 @@ fun LibraryScreen() {
 
         // Lista de playlists
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(playlists.size) { index ->
-                PlaylistCard(playlistName = playlists[index])
+                PlaylistButton(playlistName = playlists[index]) {
+                    // Acción al hacer clic en la playlist
+                    // Puedes agregar la lógica para redirigir a la pantalla correspondiente aquí
+                }
             }
         }
+
+        // Menú inferior con iconos
+        BottomNavigationBar()
     }
 }
 
 @Composable
-fun PlaylistCard(playlistName: String) {
-    Card(
+fun PlaylistButton(playlistName: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* Acción al hacer clic en una playlist */ },
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+            .height(56.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A0DAD)), // Color del botón
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Text(
+            text = playlistName,
+            fontSize = 18.sp, // Tamaño de la fuente
+            color = Color.White // Cambiamos el color del texto a blanco
+        )
+    }
+}
 
-            // Espacio donde estaba la imagen anterior
-            Spacer(modifier = Modifier.width(16.dp))
+@Composable
+fun BottomNavigationBar() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Black) // Fondo negro
+            .padding(vertical = 16.dp, horizontal = 32.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = { /* Acción al ir al menú principal */ }) {
+            Icon(
+                imageVector = Icons.Default.Home,
+                contentDescription = "Home",
+                tint = Color.White
+            )
+        }
 
-            // Nombre de la playlist
-            Text(
-                text = playlistName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontSize = 18.sp
+        IconButton(onClick = { /* Acción al ir al buscador */ }) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search",
+                tint = Color.White
+            )
+        }
+
+        IconButton(onClick = { /* Acción al ir al perfil de usuario */ }) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Profile",
+                tint = Color.White
             )
         }
     }
