@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -123,16 +125,33 @@ fun CategoryButtons() {
 
 @Composable
 fun CategoryButton(categoryName: String, imageUrl: String) {
+    val context = LocalContext.current
+    val genre = when (categoryName) {
+        "Gym Insanity" -> "rap"
+        "Roadtrip to LA" -> "rap, trap"
+        "Pop punk 2000" -> "pop punk"
+        "Electro sounds" -> "electro"
+        "Fancy brunch" -> "pop"
+        "120bpm run" -> "electronic"
+        else -> "" // Género por defecto si no coincide
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(120.dp)
             .padding(8.dp)
+            .clickable {
+                val intent = Intent(context, PlaylistActivity::class.java)
+                intent.putExtra("PLAYLIST_NAME", categoryName) // Pasar el nombre de la playlist
+                intent.putExtra("GENRE", genre) // Pasar el género correspondiente
+                context.startActivity(intent)
+            }
     ) {
         AsyncImage(
             model = imageUrl,
             contentDescription = categoryName,
-            modifier = Modifier.size(100.dp) // Hacemos la imagen más grande
+            modifier = Modifier.size(100.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -144,6 +163,9 @@ fun CategoryButton(categoryName: String, imageUrl: String) {
         )
     }
 }
+
+
+
 
 @Composable
 fun RecommendationsSection() {

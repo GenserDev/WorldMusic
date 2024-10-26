@@ -1,10 +1,10 @@
 package com.example.musicworld
 
-import androidx.compose.foundation.clickable
 import android.os.Bundle
-import android.content.Intent
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,57 +24,68 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicworld.ui.theme.MusicWorldTheme
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 class PlaylistActivity : ComponentActivity() {
     private lateinit var player: ExoPlayer
+    private val firestore: FirebaseFirestore = Firebase.firestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        player = ExoPlayer.Builder(this).build() // Inicializa el reproductor
+        player = ExoPlayer.Builder(this).build()
+
+        val playlistName = intent.getStringExtra("PLAYLIST_NAME") ?: "Favoritos"
+        val genres = intent.getStringArrayExtra("GENRES") ?: arrayOf("Unknown Genre")
 
         setContent {
             MusicWorldTheme {
-                PlaylistScreen(onSongClick = { songFileName ->
-                    playSong(songFileName) // Llama a playSong cuando se hace clic en una canción
-                })
+                PlaylistScreen(playlistName, genres)
             }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        player.release() // Libera los recursos del reproductor al destruir la actividad
+        player.release()
     }
 
     private fun playSong(fileName: String) {
-        // Construir la URL del MP3
         val songUrl = "https://firebasestorage.googleapis.com/v0/b/worldmusic-82323.appspot.com/o/$fileName?alt=media&token=4a4e4191-c08a-4d80-aaf5-252a5b856847"
         val mediaItem = MediaItem.fromUri(songUrl)
 
-        // Prepara y reproduce la canción
         player.setMediaItem(mediaItem)
         player.prepare()
         player.play()
     }
 
     @Composable
-    fun PlaylistScreen(onSongClick: (String) -> Unit) {
-        val playlistName = "Favoritos"
+    fun PlaylistScreen(playlistName: String, genres: Array<String>) {
+        var songs by remember { mutableStateOf(emptyList<Song>()) }
+        var loading by remember { mutableStateOf(true) }
+
+        // Cargar las canciones de Firestore
+        LaunchedEffect(Unit) {
+            loadSongs(genres) { loadedSongs ->
+                songs = loadedSongs
+                loading = false
+            }
+        }
+
         val playlistImage = painterResource(id = R.drawable.playlist_image)
-        val songs = listOf("anime_Dandadan.mp3") // Cambia esta lista según los nombres de tus archivos en Firebase
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFF6A0DAD), Color.Black) // Degradado de morado a negro
+                        colors = listOf(Color(0xFF6A0DAD), Color.Black)
                     )
                 )
         ) {
@@ -83,7 +94,6 @@ class PlaylistActivity : ComponentActivity() {
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                // Imagen de la playlist
                 Image(
                     painter = playlistImage,
                     contentDescription = "Imagen de la playlist",
@@ -94,7 +104,6 @@ class PlaylistActivity : ComponentActivity() {
                     contentScale = ContentScale.Crop
                 )
 
-                // Título de la playlist
                 Text(
                     text = playlistName,
                     fontSize = 24.sp,
@@ -103,39 +112,71 @@ class PlaylistActivity : ComponentActivity() {
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Lista de canciones
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(songs) { songFileName ->
-                        SongItem(songName = songFileName, onClick = onSongClick)
+                if (loading) {
+                    // Mostrar un indicador de carga
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                } else {
+                    if (songs.isEmpty()) {
+                        Text(
+                            text = "No hay canciones en esta playlist.",
+                            color = Color.White,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(songs) { song ->
+                                SongItem(songName = song.title, onClick = { playSong(song.fileName) })
+                            }
+                        }
                     }
                 }
 
-                // Espaciador que empuja el menú hacia abajo
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            // Menú inferior de navegación
             BottomNavigationBar(
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
 
+    private fun loadSongs(genres: Array<String>, callback: (List<Song>) -> Unit) {
+        val songsList = mutableListOf<Song>()
+
+        // Consultar Firestore para las canciones que coincidan con los géneros
+        firestore.collection("Tracks")
+            .whereIn("genre", genres.toList())
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    val song = document.toObject(Song::class.java)
+                    songsList.add(song)
+                    Log.d("PlaylistActivity", "Canción cargada: ${song.title} de ${song.artist}")
+                }
+                callback(songsList)
+            }
+            .addOnFailureListener { exception ->
+                Log.e("PlaylistActivity", "Error al cargar canciones: ", exception)
+                callback(emptyList())
+            }
+    }
+
     @Composable
     fun SongItem(songName: String, onClick: (String) -> Unit) {
-        // Tarjeta para cada canción
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
                 .clickable {
-                    onClick(songName) // Llama a onClick pasando el nombre del archivo
+                    onClick(songName)
                 },
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A)) // Color de fondo de la tarjeta
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A))
         ) {
             Text(
                 text = songName,
@@ -154,7 +195,7 @@ class PlaylistActivity : ComponentActivity() {
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .background(Color.Black) // Fondo negro
+                .background(Color.Black)
                 .padding(vertical = 16.dp, horizontal = 32.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -185,11 +226,10 @@ class PlaylistActivity : ComponentActivity() {
         }
     }
 
-    @Preview(showBackground = true)
-    @Composable
-    fun PlaylistScreenPreview() {
-        MusicWorldTheme {
-            PlaylistScreen(onSongClick = {})
-        }
-    }
+    data class Song(
+        val genre: String = "",
+        val title: String = "",
+        val artist: String = "",
+        val fileName: String = ""
+    )
 }
