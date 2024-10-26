@@ -4,7 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.google.gms.google-services")
+
 }
+
 
 android {
     namespace = "com.example.musicworld"
@@ -59,6 +61,10 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
 
+    implementation ("androidx.media3:media3-exoplayer:1.0.0") // O la última versión
+    implementation ("androidx.media3:media3-ui:1.0.0") // Para controles de UI
+
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -71,9 +77,10 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation("androidx.navigation:navigation-compose:2.6.0") // O la última versión disponible
+
 
     implementation("io.coil-kt:coil-compose:2.1.0")
-
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
