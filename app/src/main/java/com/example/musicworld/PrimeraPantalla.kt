@@ -1,5 +1,6 @@
 package com.example.musicworld
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -104,7 +105,7 @@ fun CategoryButton(categoryName: String, imageUrl: String) {
         "Electro sounds" -> "electro"
         "Fancy brunch" -> "pop"
         "120bpm run" -> "electronic"
-        else -> "" // Género por defecto si no coincide
+        else -> ""
     }
 
     Column(
@@ -114,8 +115,8 @@ fun CategoryButton(categoryName: String, imageUrl: String) {
             .padding(8.dp)
             .clickable {
                 val intent = Intent(context, PlaylistActivity::class.java)
-                intent.putExtra("PLAYLIST_NAME", categoryName) // Pasar el nombre de la playlist
-                intent.putExtra("GENRE", genre) // Pasar el género correspondiente
+                intent.putExtra("PLAYLIST_NAME", categoryName)
+                intent.putExtra("GENRE", genre)  // Pasar el género como un String de géneros
                 context.startActivity(intent)
             }
     ) {
@@ -134,6 +135,7 @@ fun CategoryButton(categoryName: String, imageUrl: String) {
         )
     }
 }
+
 
 
 

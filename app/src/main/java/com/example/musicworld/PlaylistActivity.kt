@@ -42,7 +42,7 @@ class PlaylistActivity : ComponentActivity() {
         player = ExoPlayer.Builder(this).build()
 
         val playlistName = intent.getStringExtra("PLAYLIST_NAME") ?: "Favoritos"
-        val genres = intent.getStringArrayExtra("GENRES") ?: arrayOf("Unknown Genre")
+        val genres = intent.getStringArrayExtra("GENRES") ?: arrayOf("rap", "trap")
 
         setContent {
             MusicWorldTheme {
@@ -78,7 +78,7 @@ class PlaylistActivity : ComponentActivity() {
             }
         }
 
-        val playlistImage = painterResource(id = R.drawable.playlist_image)
+        val playlistImage = painterResource(id = R.drawable.playlist_image1)
 
         Box(
             modifier = Modifier
@@ -130,9 +130,10 @@ class PlaylistActivity : ComponentActivity() {
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(songs) { song ->
-                                SongItem(songName = song.title, onClick = { playSong(song.fileName) })
+                                SongItem(songName = song.name, onClick = { playSong(song.fileName) })
                             }
                         }
+
                     }
                 }
 
@@ -148,15 +149,15 @@ class PlaylistActivity : ComponentActivity() {
     private fun loadSongs(genres: Array<String>, callback: (List<Song>) -> Unit) {
         val songsList = mutableListOf<Song>()
 
-        // Consultar Firestore para las canciones que coincidan con los géneros
         firestore.collection("Tracks")
             .whereIn("genre", genres.toList())
             .get()
             .addOnSuccessListener { documents ->
+                Log.d("PlaylistActivity", "Número de documentos: ${documents.size()}")
                 for (document in documents) {
                     val song = document.toObject(Song::class.java)
                     songsList.add(song)
-                    Log.d("PlaylistActivity", "Canción cargada: ${song.title} de ${song.artist}")
+                    Log.d("PlaylistActivity", "Canción cargada: ${song.name} de ${song.artist}, Género: ${song.genre}")
                 }
                 callback(songsList)
             }
@@ -165,6 +166,8 @@ class PlaylistActivity : ComponentActivity() {
                 callback(emptyList())
             }
     }
+
+
 
     @Composable
     fun SongItem(songName: String, onClick: (String) -> Unit) {
@@ -230,6 +233,7 @@ class PlaylistActivity : ComponentActivity() {
         val genre: String = "",
         val title: String = "",
         val artist: String = "",
-        val fileName: String = ""
+        val fileName: String = "",
+        val name: String = ""
     )
 }
