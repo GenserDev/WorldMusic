@@ -1,53 +1,29 @@
 package com.example.musicworld
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.musicworld.ui.theme.MusicWorldTheme
-
-class segpant : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MusicWorldTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    SearchScreenContent()
-                }
-            }
-        }
-    }
-}
+import androidx.navigation.NavHostController
 
 @Composable
-fun SearchScreenContent() {
+fun SearchScreenContent(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFF6A0DAD), Color.Black) // Morado a negro
+                    colors = listOf(Color(0xFF6A0DAD), Color.Black)
                 )
             )
             .padding(16.dp)
@@ -67,7 +43,7 @@ fun SearchScreenContent() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Lista de resultados
+        // Lista de resultados de búsqueda
         val searchItems = listOf(
             "Beyonce", "Drake", "Pop", "Ed Sheeran", "New Music",
             "Ariana Grande", "Chill", "Summer Hits", "Taylor Swift", "Country"
@@ -79,8 +55,7 @@ fun SearchScreenContent() {
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Barra de navegación inferior
-        BottomNavigationBar()
+        BottomNavigationBar(navController = navController)
     }
 }
 
@@ -122,12 +97,10 @@ fun SearchItemRow(item: String) {
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp)
-            .background(Color(0xFF1C1C1E), shape = RectangleShape)
+            .background(Color(0xFF1C1C1E))
             .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Texto del item
         Text(
             text = item,
             fontSize = 16.sp,
@@ -136,38 +109,3 @@ fun SearchItemRow(item: String) {
     }
 }
 
-@Composable
-fun BottomNavigationBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.Black) // Fondo negro de la barra de navegación
-            .padding(vertical = 16.dp, horizontal = 32.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = { /* Acción al ir al menú principal */ }) {
-            Icon(
-                imageVector = Icons.Default.Home,
-                contentDescription = "Home",
-                tint = Color.White
-            )
-        }
-
-        IconButton(onClick = { /* Acción al ir al buscador */ }) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search",
-                tint = Color.White
-            )
-        }
-
-        IconButton(onClick = { /* Acción al ir al perfil de usuario */ }) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Profile",
-                tint = Color.White
-            )
-        }
-    }
-}
