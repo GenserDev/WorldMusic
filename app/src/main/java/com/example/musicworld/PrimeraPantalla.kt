@@ -1,21 +1,9 @@
 package com.example.musicworld
 
-import android.os.Bundle
-import android.content.Intent
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,27 +13,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import com.example.musicworld.ui.theme.MusicWorldTheme
-
-class PrimeraPantalla : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MusicWorldTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    MusicWorldScreen()
-                }
-            }
-        }
-    }
-}
 
 @Composable
-fun MusicWorldScreen() {
+fun PrimeraPantalla(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -55,7 +27,6 @@ fun MusicWorldScreen() {
                 )
             )
     ) {
-        // Este bloque tendrá peso para ocupar el espacio disponible
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -84,8 +55,8 @@ fun MusicWorldScreen() {
             RecommendationsSection()
         }
 
-        // Barra de navegación siempre en la parte inferior
-        CustomBottomNavigationBar()
+        // Barra de navegación inferior
+        BottomNavigationBar(navController = navController)
     }
 }
 
@@ -196,7 +167,7 @@ fun RecommendationCard(title: String, imageUrl: String) {
     Column(
         modifier = Modifier
             .width(140.dp)
-            .background(Color.Transparent) // Fondo transparente
+            .background(Color.Transparent)
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -219,41 +190,5 @@ fun RecommendationCard(title: String, imageUrl: String) {
             fontSize = 12.sp,
             color = Color.Gray
         )
-    }
-}
-
-@Composable
-fun CustomBottomNavigationBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.Black)
-            .padding(vertical = 16.dp, horizontal = 32.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = { /* Acción al ir al menú principal */ }) {
-            Icon(
-                imageVector = Icons.Default.Home,
-                contentDescription = "Home",
-                tint = Color.White
-            )
-        }
-
-        IconButton(onClick = { /* Acción al ir al buscador */ }) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search",
-                tint = Color.White
-            )
-        }
-
-        IconButton(onClick = { /* Acción al ir al perfil de usuario */ }) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Profile",
-                tint = Color.White
-            )
-        }
     }
 }
