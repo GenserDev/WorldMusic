@@ -42,7 +42,7 @@ class PlaylistActivity : ComponentActivity() {
         player = ExoPlayer.Builder(this).build()
 
         val playlistName = intent.getStringExtra("PLAYLIST_NAME") ?: "Favoritos"
-        val genres = intent.getStringArrayExtra("GENRES") ?: arrayOf("rap", "trap")
+        val genres: Array<String> = intent.getStringArrayExtra("GENRES") ?: arrayOf(" ")
 
         setContent {
             MusicWorldTheme {
@@ -130,10 +130,9 @@ class PlaylistActivity : ComponentActivity() {
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(songs) { song ->
-                                SongItem(songName = song.name, onClick = { playSong(song.fileName) })
+                                SongItem(songName = song.name) { playSong(song.fileName) }
                             }
                         }
-
                     }
                 }
 
@@ -167,17 +166,13 @@ class PlaylistActivity : ComponentActivity() {
             }
     }
 
-
-
     @Composable
-    fun SongItem(songName: String, onClick: (String) -> Unit) {
+    fun SongItem(songName: String, onClick: () -> Unit) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .clickable {
-                    onClick(songName)
-                },
+                .clickable { onClick() },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A))
         ) {
