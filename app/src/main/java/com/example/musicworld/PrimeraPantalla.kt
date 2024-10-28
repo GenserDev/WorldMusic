@@ -98,14 +98,14 @@ fun CategoryButtons() {
 @Composable
 fun CategoryButton(categoryName: String, imageUrl: String) {
     val context = LocalContext.current
-    val genre = when (categoryName) {
-        "Gym Insanity" -> "rap"
-        "Roadtrip to LA" -> "rap, trap"
-        "Pop punk 2000" -> "pop punk"
-        "Electro sounds" -> "electro"
-        "Fancy brunch" -> "pop"
-        "120bpm run" -> "electronic"
-        else -> ""
+    val genres = when (categoryName) {
+        "Gym Insanity" -> arrayOf("rap")
+        "Roadtrip to LA" -> arrayOf("rap", "trap")
+        "Pop punk 2000" -> arrayOf("pop punk")
+        "Electro sounds" -> arrayOf("electro")
+        "Fancy brunch" -> arrayOf("pop")
+        "120bpm run" -> arrayOf("electronic")
+        else -> emptyArray() // Devuelve un array vacío si no hay coincidencia
     }
 
     Column(
@@ -116,7 +116,7 @@ fun CategoryButton(categoryName: String, imageUrl: String) {
             .clickable {
                 val intent = Intent(context, PlaylistActivity::class.java)
                 intent.putExtra("PLAYLIST_NAME", categoryName)
-                intent.putExtra("GENRE", genre)  // Pasar el género como un String de géneros
+                intent.putExtra("GENRES", genres) // Enviar como array de géneros
                 context.startActivity(intent)
             }
     ) {
@@ -140,6 +140,7 @@ fun CategoryButton(categoryName: String, imageUrl: String) {
 
 
 
+
 @Composable
 fun RecommendationsSection() {
     Column(
@@ -150,27 +151,35 @@ fun RecommendationsSection() {
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            RecommendationCard("Acoustic vibes", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR8lmiSdBv5b47lcdA3s6V275IveEUQZaB8tw&s")
+            RecommendationCard("Acoustic vibes", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR8lmiSdBv5b47lcdA3s6V275IveEUQZaB8tw&s", "lofi")
             Spacer(modifier = Modifier.width(16.dp))
-            RecommendationCard("Wanderlust", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEZRn0msB3bFNHtEZwwOfzSw67Nt0HdPMo0Q&s")
+            RecommendationCard("Wanderlust", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEZRn0msB3bFNHtEZwwOfzSw67Nt0HdPMo0Q&s", "pop")
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            RecommendationCard("Country roads", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTc_Ei36dN99xfgFbNz8JGpic9BR5QSitcBaQ&s")
+            RecommendationCard("Country roads", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTc_Ei36dN99xfgFbNz8JGpic9BR5QSitcBaQ&s", "country")
         }
     }
 }
 
 @Composable
-fun RecommendationCard(title: String, imageUrl: String) {
+fun RecommendationCard(title: String, imageUrl: String, genre: String) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .width(140.dp)
             .background(Color.Transparent)
-            .padding(8.dp),
+            .padding(8.dp)
+            .clickable {
+                val intent = Intent(context, PlaylistActivity::class.java)
+                intent.putExtra("PLAYLIST_NAME", title)
+                intent.putExtra("GENRE", genre)  // Pasar el género como un String
+                context.startActivity(intent)
+            },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         AsyncImage(
@@ -194,3 +203,5 @@ fun RecommendationCard(title: String, imageUrl: String) {
         )
     }
 }
+
+
