@@ -18,46 +18,48 @@ import androidx.navigation.NavHostController
 
 @Composable
 fun SearchScreenContent(navController: NavHostController) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFF6A0DAD), Color.Black)
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController = navController) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFF6A0DAD), Color.Black)
+                    )
                 )
+                .padding(16.dp)
+        ) {
+            // Campo de búsqueda
+            SearchBar()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Título "Top Search"
+            Text(
+                text = "Top search",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
-            .padding(16.dp)
-    ) {
-        // Campo de búsqueda
-        SearchBar()
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Título "Top Search"
-        Text(
-            text = "Top search",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Lista de resultados de búsqueda
-        val searchItems = listOf(
-            "Beyonce", "Drake", "Pop", "Ed Sheeran", "New Music",
-            "Ariana Grande", "Chill", "Summer Hits", "Taylor Swift", "Country"
-        )
-        searchItems.forEach { item ->
-            SearchItemRow(item)
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Lista de resultados de búsqueda
+            val searchItems = listOf(
+                "Beyonce", "Drake", "Pop", "Ed Sheeran", "New Music",
+                "Ariana Grande", "Chill", "Summer Hits", "Taylor Swift", "Country"
+            )
+            searchItems.forEach { item ->
+                SearchItemRow(item)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        BottomNavigationBar(navController = navController)
     }
 }
+
 
 @Composable
 fun SearchBar() {
