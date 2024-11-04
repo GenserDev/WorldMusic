@@ -19,18 +19,18 @@ import coil.compose.AsyncImage
 
 @Composable
 fun PrimeraPantalla(navController: NavHostController) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFF6A0DAD), Color.Black)
-                )
-            )
-    ) {
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController = navController) }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
-                .weight(1f)
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFF6A0DAD), Color.Black)
+                    )
+                )
                 .padding(16.dp)
         ) {
             Text(
@@ -55,11 +55,9 @@ fun PrimeraPantalla(navController: NavHostController) {
             )
             RecommendationsSection()
         }
-
-        // Barra de navegación inferior
-        BottomNavigationBar(navController = navController)
     }
 }
+
 
 @Composable
 fun CategoryButtons() {
