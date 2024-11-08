@@ -4,17 +4,13 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.navigation.compose.rememberNavController
 import com.example.musicworld.ui.theme.MusicWorldTheme
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
@@ -36,6 +33,10 @@ import com.google.firebase.ktx.Firebase
 class PlaylistActivity : ComponentActivity() {
     private lateinit var player: ExoPlayer
     private val firestore: FirebaseFirestore = Firebase.firestore
+    private var currentSongIndex by mutableStateOf(0)
+    private var isPlaying by mutableStateOf(false)
+
+    private val playlist = mutableListOf<Song>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +64,50 @@ class PlaylistActivity : ComponentActivity() {
         player.setMediaItem(mediaItem)
         player.prepare()
         player.play()
+        isPlaying = true
+    }
+
+    private fun pauseSong() {
+        player.pause()
+        isPlaying = false
+    }
+
+    private fun nextSong() {
+        currentSongIndex = (currentSongIndex + 1) % playlist.size
+        playSong(playlist[currentSongIndex].fileName)
+    }
+
+    private fun previousSong() {
+        currentSongIndex = if (currentSongIndex == 0) {
+            playlist.size - 1
+        } else {
+            currentSongIndex - 1
+        }
+        playSong(playlist[currentSongIndex].fileName)
+    }
+
+    private fun loadSongs(genres: Array<String>, callback: (List<Song>) -> Unit) {
+        val songsList = mutableListOf<Song>()
+
+        firestore.collection("Tracks")
+            .whereIn("genre", genres.toList())
+            .get()
+            .addOnSuccessListener { documents ->
+                Log.d("PlaylistActivity", "Número de documentos: ${documents.size()}")
+                for (document in documents) {
+                    val song = document.toObject(Song::class.java)
+                    songsList.add(song)
+                    Log.d("PlaylistActivity", "Canción cargada: ${song.name} de ${song.artist}, Género: ${song.genre}")
+                }
+                playlist.clear()
+                playlist.addAll(songsList)
+                callback(songsList)
+                playSong(songsList.firstOrNull()?.fileName ?: "")
+            }
+            .addOnFailureListener { exception ->
+                Log.e("PlaylistActivity", "Error al cargar canciones: ", exception)
+                callback(emptyList())
+            }
     }
 
     @Composable
@@ -80,90 +125,99 @@ class PlaylistActivity : ComponentActivity() {
 
         val playlistImage = painterResource(id = R.drawable.playlist_image1)
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFF6A0DAD), Color.Black)
-                    )
-                )
-        ) {
-            Column(
+        Scaffold(
+            bottomBar = { BottomNavigationBar(navController = rememberNavController()) }
+        ) { paddingValues ->
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                Image(
-                    painter = playlistImage,
-                    contentDescription = "Imagen de la playlist",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .padding(bottom = 16.dp),
-                    contentScale = ContentScale.Crop
-                )
-
-                Text(
-                    text = playlistName,
-                    fontSize = 24.sp,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                if (loading) {
-                    // Mostrar un indicador de carga
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    .padding(paddingValues)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color(0xFF6A0DAD), Color.Black)
+                        )
                     )
-                } else {
-                    if (songs.isEmpty()) {
-                        Text(
-                            text = "No hay canciones en esta playlist.",
-                            color = Color.White,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Image(
+                        painter = playlistImage,
+                        contentDescription = "Imagen de la playlist",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .padding(bottom = 16.dp),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Text(
+                        text = playlistName,
+                        fontSize = 24.sp,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    if (loading) {
+                        CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
                     } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(songs) { song ->
-                                SongItem(songName = song.name) { playSong(song.fileName) }
+                        if (songs.isEmpty()) {
+                            Text(
+                                text = "No hay canciones en esta playlist.",
+                                color = Color.White,
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(songs) { song ->
+                                    SongItem(songName = song.name) {
+                                        currentSongIndex = songs.indexOf(song)
+                                        playSong(song.fileName)
+                                    }
+                                }
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Agregar los controles de música como botones de imagen
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { /* Acción para dar me gusta */ }) {
+                            Image(painter = painterResource(id = R.drawable.like), contentDescription = "Like")
+                        }
+
+                        IconButton(onClick = { previousSong() }) {
+                            Image(painter = painterResource(id = R.drawable.atras), contentDescription = "Anterior")
+                        }
+
+                        IconButton(onClick = {
+                            if (isPlaying) pauseSong() else playSong(playlist[currentSongIndex].fileName)
+                        }) {
+                            Image(painter = painterResource(id = R.drawable.pausa), contentDescription = if (isPlaying) "Pausar" else "Reproducir")
+                        }
+
+                        IconButton(onClick = { nextSong() }) {
+                            Image(painter = painterResource(id = R.drawable.siguiente), contentDescription = "Siguiente")
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
             }
-
-            BottomNavigationBar(
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
         }
-    }
-
-    private fun loadSongs(genres: Array<String>, callback: (List<Song>) -> Unit) {
-        val songsList = mutableListOf<Song>()
-
-        firestore.collection("Tracks")
-            .whereIn("genre", genres.toList())
-            .get()
-            .addOnSuccessListener { documents ->
-                Log.d("PlaylistActivity", "Número de documentos: ${documents.size()}")
-                for (document in documents) {
-                    val song = document.toObject(Song::class.java)
-                    songsList.add(song)
-                    Log.d("PlaylistActivity", "Canción cargada: ${song.name} de ${song.artist}, Género: ${song.genre}")
-                }
-                callback(songsList)
-            }
-            .addOnFailureListener { exception ->
-                Log.e("PlaylistActivity", "Error al cargar canciones: ", exception)
-                callback(emptyList())
-            }
     }
 
     @Composable
@@ -185,42 +239,6 @@ class PlaylistActivity : ComponentActivity() {
                     .fillMaxSize(),
                 textAlign = TextAlign.Start
             )
-        }
-    }
-
-    @Composable
-    fun BottomNavigationBar(modifier: Modifier = Modifier) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .background(Color.Black)
-                .padding(vertical = 16.dp, horizontal = 32.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { /* Acción al ir al menú principal */ }) {
-                Icon(
-                    imageVector = Icons.Default.Home,
-                    contentDescription = "Home",
-                    tint = Color.White
-                )
-            }
-
-            IconButton(onClick = { /* Acción al ir al buscador */ }) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = Color.White
-                )
-            }
-
-            IconButton(onClick = { /* Acción al ir al perfil de usuario */ }) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Profile",
-                    tint = Color.White
-                )
-            }
         }
     }
 
