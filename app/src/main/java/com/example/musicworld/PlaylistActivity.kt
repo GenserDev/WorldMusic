@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,13 +28,15 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.compose.rememberNavController
 import com.example.musicworld.ui.theme.MusicWorldTheme
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
+import kotlinx.coroutines.launch
 
 class PlaylistActivity : ComponentActivity() {
     private lateinit var player: ExoPlayer
-    private val firestore: FirebaseFirestore = Firebase.firestore
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private var currentSongIndex by mutableStateOf(0)
     private var isPlaying by mutableStateOf(false)
 
@@ -42,8 +46,8 @@ class PlaylistActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         player = ExoPlayer.Builder(this).build()
 
-        val playlistName = intent.getStringExtra("PLAYLIST_NAME") ?: "Favoritos"
-        val genres: Array<String> = intent.getStringArrayExtra("GENRES") ?: arrayOf(" ")
+        val playlistName = intent.getStringExtra("PLAYLIST_NAME") ?: "Playlist"
+        val genres: Array<String> = intent.getStringArrayExtra("GENRES") ?: arrayOf()
 
         setContent {
             MusicWorldTheme {
@@ -58,18 +62,37 @@ class PlaylistActivity : ComponentActivity() {
     }
 
     private fun playSong(fileName: String) {
-        val songUrl = "https://firebasestorage.googleapis.com/v0/b/worldmusic-82323.appspot.com/o/$fileName?alt=media&token=4a4e4191-c08a-4d80-aaf5-252a5b856847"
-        val mediaItem = MediaItem.fromUri(songUrl)
+        val storageReference = Firebase.storage.reference.child(fileName)
 
-        player.setMediaItem(mediaItem)
-        player.prepare()
-        player.play()
-        isPlaying = true
+        storageReference.downloadUrl.addOnSuccessListener { uri ->
+            val songUrl = uri.toString()
+
+            try {
+                if (player.isPlaying) {
+                    player.stop()
+                    player.clearMediaItems()
+                }
+                val mediaItem = MediaItem.fromUri(songUrl)
+                player.setMediaItem(mediaItem)
+                player.prepare()
+                player.play()
+                isPlaying = true
+            } catch (e: Exception) {
+                Log.e("PlaylistActivity", "Error al reproducir la canción: ${e.message}")
+            }
+        }.addOnFailureListener { exception ->
+            Log.e("PlaylistActivity", "Error al obtener la URL de la canción: ${exception.message}")
+        }
     }
 
-    private fun pauseSong() {
-        player.pause()
-        isPlaying = false
+    private fun pauseOrResumeSong() {
+        if (isPlaying) {
+            player.pause()
+            isPlaying = false
+        } else {
+            player.play()
+            isPlaying = true
+        }
     }
 
     private fun nextSong() {
@@ -93,20 +116,27 @@ class PlaylistActivity : ComponentActivity() {
             .whereIn("genre", genres.toList())
             .get()
             .addOnSuccessListener { documents ->
-                Log.d("PlaylistActivity", "Número de documentos: ${documents.size()}")
                 for (document in documents) {
                     val song = document.toObject(Song::class.java)
                     songsList.add(song)
-                    Log.d("PlaylistActivity", "Canción cargada: ${song.name} de ${song.artist}, Género: ${song.genre}")
                 }
                 playlist.clear()
                 playlist.addAll(songsList)
                 callback(songsList)
-                playSong(songsList.firstOrNull()?.fileName ?: "")
             }
             .addOnFailureListener { exception ->
-                Log.e("PlaylistActivity", "Error al cargar canciones: ", exception)
+                Log.e("PlaylistActivity", "Error al cargar canciones: ${exception.message}")
                 callback(emptyList())
+            }
+    }
+
+    private fun addSongToFavorites(song: Song, onSuccess: () -> Unit) {
+        val favoritesRef = firestore.collection("Playlists").document("Favorites")
+
+        favoritesRef.update("songs", FieldValue.arrayUnion(song))
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                Log.e("PlaylistActivity", "Error al agregar canción a Favoritos: ${e.message}")
             }
     }
 
@@ -114,8 +144,9 @@ class PlaylistActivity : ComponentActivity() {
     fun PlaylistScreen(playlistName: String, genres: Array<String>) {
         var songs by remember { mutableStateOf(emptyList<Song>()) }
         var loading by remember { mutableStateOf(true) }
+        val snackbarHostState = remember { SnackbarHostState() }
+        val coroutineScope = rememberCoroutineScope()
 
-        // Cargar las canciones de Firestore
         LaunchedEffect(Unit) {
             loadSongs(genres) { loadedSongs ->
                 songs = loadedSongs
@@ -123,9 +154,8 @@ class PlaylistActivity : ComponentActivity() {
             }
         }
 
-        val playlistImage = painterResource(id = R.drawable.playlist_image1)
-
         Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             bottomBar = { BottomNavigationBar(navController = rememberNavController()) }
         ) { paddingValues ->
             Box(
@@ -144,7 +174,7 @@ class PlaylistActivity : ComponentActivity() {
                         .padding(16.dp)
                 ) {
                     Image(
-                        painter = playlistImage,
+                        painter = painterResource(id = R.drawable.playlist_image1),
                         contentDescription = "Imagen de la playlist",
                         modifier = Modifier
                             .fillMaxWidth()
@@ -178,10 +208,22 @@ class PlaylistActivity : ComponentActivity() {
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 items(songs) { song ->
-                                    SongItem(songName = song.name) {
-                                        currentSongIndex = songs.indexOf(song)
-                                        playSong(song.fileName)
-                                    }
+                                    SongItem(
+                                        songName = song.name,
+                                        onClick = {
+                                            currentSongIndex = songs.indexOf(song)
+                                            playSong(song.fileName)
+                                        },
+                                        onFavoriteClick = {
+                                            addSongToFavorites(song) {
+                                                coroutineScope.launch {
+                                                    snackbarHostState.showSnackbar(
+                                                        "Canción agregada a Favoritos"
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -189,7 +231,7 @@ class PlaylistActivity : ComponentActivity() {
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Agregar los controles de música como botones de imagen
+                    // Barra de controles inferior
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -197,22 +239,25 @@ class PlaylistActivity : ComponentActivity() {
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { /* Acción para dar me gusta */ }) {
-                            Image(painter = painterResource(id = R.drawable.like), contentDescription = "Like")
-                        }
-
                         IconButton(onClick = { previousSong() }) {
-                            Image(painter = painterResource(id = R.drawable.atras), contentDescription = "Anterior")
+                            Image(
+                                painter = painterResource(id = R.drawable.atras),
+                                contentDescription = "Anterior"
+                            )
                         }
 
-                        IconButton(onClick = {
-                            if (isPlaying) pauseSong() else playSong(playlist[currentSongIndex].fileName)
-                        }) {
-                            Image(painter = painterResource(id = R.drawable.pausa), contentDescription = if (isPlaying) "Pausar" else "Reproducir")
+                        IconButton(onClick = { pauseOrResumeSong() }) {
+                            Image(
+                                painter = painterResource(id = if (isPlaying) R.drawable.pausa else R.drawable.reproductor),
+                                contentDescription = if (isPlaying) "Pausar" else "Reproducir"
+                            )
                         }
 
                         IconButton(onClick = { nextSong() }) {
-                            Image(painter = painterResource(id = R.drawable.siguiente), contentDescription = "Siguiente")
+                            Image(
+                                painter = painterResource(id = R.drawable.siguiente),
+                                contentDescription = "Siguiente"
+                            )
                         }
                     }
                 }
@@ -221,24 +266,29 @@ class PlaylistActivity : ComponentActivity() {
     }
 
     @Composable
-    fun SongItem(songName: String, onClick: () -> Unit) {
-        Card(
+    fun SongItem(songName: String, onClick: () -> Unit, onFavoriteClick: () -> Unit) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .clickable { onClick() },
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A))
+                .padding(8.dp)
+                .background(Color(0xFF2A2A2A), RoundedCornerShape(12.dp))
+                .clickable { onClick() }
         ) {
             Text(
                 text = songName,
                 fontSize = 18.sp,
                 color = Color.White,
                 modifier = Modifier
+                    .weight(1f)
                     .padding(16.dp)
-                    .fillMaxSize(),
-                textAlign = TextAlign.Start
             )
+            IconButton(onClick = onFavoriteClick) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = "Agregar a Favoritos",
+                    tint = Color.Red
+                )
+            }
         }
     }
 

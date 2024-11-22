@@ -15,12 +15,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 @Composable
 fun SearchScreenContent(navController: NavHostController) {
     Scaffold(
         bottomBar = { BottomNavigationBar(navController = navController) }
     ) { paddingValues ->
+        val firestore = Firebase.firestore
+        var searchText by remember { mutableStateOf("") }
+        var searchResults by remember { mutableStateOf(emptyList<Song>()) }
+        var loading by remember { mutableStateOf(false) }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -33,38 +41,60 @@ fun SearchScreenContent(navController: NavHostController) {
                 .padding(16.dp)
         ) {
             // Campo de búsqueda
-            SearchBar()
+            SearchBar(
+                searchText = searchText,
+                onSearchTextChange = { newText ->
+                    searchText = newText
+                    if (searchText.isNotEmpty()) {
+                        loading = true
+                        searchInFirebase(firestore, searchText) { results ->
+                            searchResults = results
+                            loading = false
+                        }
+                    } else {
+                        searchResults = emptyList()
+                    }
+                }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Título "Top Search"
-            Text(
-                text = "Top search",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            // Indicador de carga o resultados
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            } else {
+                if (searchResults.isEmpty()) {
+                    Text(
+                        text = "No se encontraron resultados.",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                } else {
+                    Text(
+                        text = "Resultados de búsqueda",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            // Lista de resultados de búsqueda
-            val searchItems = listOf(
-                "Beyonce", "Drake", "Pop", "Ed Sheeran", "New Music",
-                "Ariana Grande", "Chill", "Summer Hits", "Taylor Swift", "Country"
-            )
-            searchItems.forEach { item ->
-                SearchItemRow(item)
-                Spacer(modifier = Modifier.height(8.dp))
+                    // Mostrar resultados
+                    searchResults.forEach { song ->
+                        SearchItemRow(item = "${song.name} - ${song.artist} (${song.genre})")
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
             }
         }
     }
 }
 
-
 @Composable
-fun SearchBar() {
-    var searchText by remember { mutableStateOf("") }
-
+fun SearchBar(searchText: String, onSearchTextChange: (String) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -75,14 +105,14 @@ fun SearchBar() {
     ) {
         BasicTextField(
             value = searchText,
-            onValueChange = { searchText = it },
+            onValueChange = onSearchTextChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             textStyle = TextStyle(fontSize = 14.sp, color = Color.White),
             decorationBox = { innerTextField ->
                 if (searchText.isEmpty()) {
                     Text(
-                        text = "Artists, songs or podcasts",
+                        text = "Buscar por artista, canción o género",
                         color = Color(0xFF9E9E9E),
                         fontSize = 14.sp
                     )
@@ -111,3 +141,36 @@ fun SearchItemRow(item: String) {
     }
 }
 
+// Función para buscar en Firebase
+fun searchInFirebase(
+    firestore: FirebaseFirestore,
+    query: String,
+    callback: (List<Song>) -> Unit
+) {
+    firestore.collection("Tracks")
+        .get()
+        .addOnSuccessListener { documents ->
+            val results = documents.mapNotNull { document ->
+                val song = document.toObject(Song::class.java)
+                if (song.artist.contains(query, ignoreCase = true) ||
+                    song.name.contains(query, ignoreCase = true) ||
+                    song.genre.contains(query, ignoreCase = true)
+                ) {
+                    song
+                } else null
+            }
+            callback(results)
+        }
+        .addOnFailureListener {
+            callback(emptyList())
+        }
+}
+
+// Clase Song
+data class Song(
+    val name: String = "",
+    val artist: String = "",
+    val genre: String = "",
+    val fileName: String = "",
+    val albumArt: String = ""
+)

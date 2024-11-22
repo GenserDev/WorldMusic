@@ -4,12 +4,16 @@ import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,6 +37,7 @@ fun PrimeraPantalla(navController: NavHostController) {
                 )
                 .padding(16.dp)
         ) {
+            // Sección "Recientemente"
             Text(
                 text = "Recientemente",
                 fontSize = 22.sp,
@@ -43,7 +48,9 @@ fun PrimeraPantalla(navController: NavHostController) {
                     .align(Alignment.CenterHorizontally)
             )
             CategoryButtons()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Sección "More like Taylor Swift"
             Text(
                 text = "More like Taylor Swift",
                 fontSize = 20.sp,
@@ -58,7 +65,6 @@ fun PrimeraPantalla(navController: NavHostController) {
     }
 }
 
-
 @Composable
 fun CategoryButtons() {
     val categories = listOf(
@@ -70,25 +76,15 @@ fun CategoryButtons() {
         Pair("120bpm run", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZHiAPZys-fgn5vEmul4D9lJP58HlEVhJz1w&s")
     )
 
-    Column {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            categories.take(3).forEach { category ->
-                CategoryButton(category.first, category.second)
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            categories.drop(3).forEach { category ->
-                CategoryButton(category.first, category.second)
-            }
+    // Diseño en cuadrícula para mantener tamaño uniforme
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(categories) { category ->
+            CategoryButton(category.first, category.second)
         }
     }
 }
@@ -103,41 +99,41 @@ fun CategoryButton(categoryName: String, imageUrl: String) {
         "Electro sounds" -> arrayOf("electro")
         "Fancy brunch" -> arrayOf("pop")
         "120bpm run" -> arrayOf("electronic")
-        else -> emptyArray() // Devuelve un array vacío si no hay coincidencia
+        else -> emptyArray()
     }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(120.dp)
             .padding(8.dp)
             .clickable {
                 val intent = Intent(context, PlaylistActivity::class.java)
                 intent.putExtra("PLAYLIST_NAME", categoryName)
-                intent.putExtra("GENRES", genres) // Enviar como array de géneros
+                intent.putExtra("GENRES", genres)
                 context.startActivity(intent)
             }
     ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = categoryName,
-            modifier = Modifier.size(100.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .background(Color.Gray)
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = categoryName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = categoryName,
             color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }
-
-
-
-
-
 
 @Composable
 fun RecommendationsSection() {
@@ -158,7 +154,6 @@ fun RecommendationsSection() {
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            RecommendationCard("Country roads", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTc_Ei36dN99xfgFbNz8JGpic9BR5QSitcBaQ&s", "country")
         }
     }
 }
@@ -170,28 +165,32 @@ fun RecommendationCard(title: String, imageUrl: String, genre: String) {
     Column(
         modifier = Modifier
             .width(140.dp)
-            .background(Color.Transparent)
             .padding(8.dp)
             .clickable {
                 val intent = Intent(context, PlaylistActivity::class.java)
                 intent.putExtra("PLAYLIST_NAME", title)
-                intent.putExtra("GENRE", genre)  // Pasar el género como un String
+                intent.putExtra("GENRE", genre)
                 context.startActivity(intent)
             },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = title,
+        Box(
             modifier = Modifier
-                .height(100.dp)
-                .fillMaxWidth()
-        )
+                .size(100.dp)
+                .background(Color.Gray)
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = title,
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            fontSize = 14.sp,
             color = Color.White
         )
         Text(
@@ -201,5 +200,6 @@ fun RecommendationCard(title: String, imageUrl: String, genre: String) {
         )
     }
 }
+
 
 
